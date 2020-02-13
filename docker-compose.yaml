@@ -7,8 +7,6 @@ services:
             - mongo-db
         networks:
             - default
-        expose:
-            - "1026"
         ports:
             - "1026:1026"
         command: -dbhost mongo-db -logLevel DEBUG
@@ -23,8 +21,6 @@ services:
             - mosquitto
         networks:
             - default
-        expose:
-            - "4041"
         ports:
             - "4041:4041"
         environment:
@@ -57,9 +53,6 @@ services:
                 aliases:
                     - iot-sensors
                     - context-provider
-        expose:
-            - "3000"
-            - "3001"
         ports:
             - "3000:3000"
             - "3001:3001"
@@ -79,8 +72,6 @@ services:
     mongo-db:
         image: mongo:3.6
         hostname: mongo-db
-        expose:
-            - "27017"
         ports:
             - "27017:27017"
         networks:
@@ -92,9 +83,6 @@ services:
     mosquitto:
         image: eclipse-mosquitto
         hostname: mosquitto
-        expose:
-            - "1883"
-            - "9001"
         ports:
             - "1883:1883"
             - "9001:9001"

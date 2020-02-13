@@ -63,18 +63,30 @@ git clone https://github.com/mstreet97/dncs-swarm-management.git
 ```
 Now we can finally deploy our stack with:
 ```bash
-docker stack deploy -c fiware-swarm-stack.yaml fiware-swarm
+docker stack deploy -c docker-compose.yaml fiware-swarm
 ```
-After having done this, run the provisioning script, that provisions all the sensor in the four stores with:
+After having done this, we can check if everything is up and running by giving the command:
+```bash
+docker stack ps fiware-stack
+```
+Which will answer showing all the containers up and running and explicitly declaring on which node they are.
+
+Next we need to run the provisioning script, that provisions all the sensor in the four stores with:
 ```bash
 bash provisioner.sh
 ```
 Once this has been done, we can head to:
 ```bash
-localhost:3000/device/monitor
+192.168.99.100:3000/device/monitor
 ```
 To be able to interact with the dummy IoT devices and see the MQTT message exchange.
+NOTE: Every ip of the three node stack will do it, so we can even use:
+```bash
+192.168.99.101:3000/device/monitor
+192.168.99.102:3000/device/monitor
+```
+and obtain the same result.
 
 Still missing to do:
-- actual swarm deploy, since it's only been tested locally
+- fixing the actual swarm deploy, since it's only been tested successfully locally. There is a problem with the provisioning file, which the cURL returns an internal server error and honestly I have no idea why
 - swarm monitoring with swarmpit
