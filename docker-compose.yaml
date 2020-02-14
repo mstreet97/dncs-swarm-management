@@ -70,7 +70,7 @@ services:
             test: curl --fail -s http://visualizer:3000/version || exit 1
 
     mongo-db:
-        image: mongo:3.2
+        image: mongo:3.6
         hostname: mongo-db
         ports:
             - "27017:27017"
