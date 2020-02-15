@@ -1,105 +1,55 @@
 version: "3.5"
 services:
-    orion:
-        image: fiware/orion
-        hostname: orion
-        depends_on:
-            - mongo-db
-        networks:
-            - default
-        ports:
-            - "1026:1026"
-        command: -dbhost mongo-db -logLevel DEBUG
-        healthcheck:
-            test: curl --fail -s http://orion:1026/version || exit 1
-
-    iot-agent:
-        image: fiware/iotagent-ul:latest
-        hostname: iot-agent
-        depends_on:
-            - mongo-db
-            - mosquitto
-        networks:
-            - default
-        ports:
-            - "4041:4041"
-        environment:
-            - IOTA_CB_HOST=orion
-            - IOTA_CB_PORT=1026
-            - IOTA_NORTH_PORT=4041
-            - IOTA_REGISTRY_TYPE=mongodb
-            - IOTA_LOG_LEVEL=DEBUG
-            - IOTA_TIMESTAMP=true
-            - IOTA_CB_NGSI_VERSION=v2
-            - IOTA_AUTOCAST=true
-            - IOTA_MONGO_HOST=mongo-db # The host name of MongoDB
-            - IOTA_MONGO_PORT=27017 # The port mongoDB is listening on
-            - IOTA_MONGO_DB=iotagentul # The name of the database used in mongoDB
-            - IOTA_MQTT_HOST=mosquitto # The host name of the MQTT Broker
-            - IOTA_MQTT_PORT=1883 # The port the MQTT Broker is listening on to receive topics
-            - IOTA_DEFAULT_RESOURCE= # Default is blank. I'm using MQTT so I don't need a resource
-            - IOTA_PROVIDER_URL=http://iot-agent:4041
-        healthcheck:
-            test: curl --fail -s http://iot-agent:4041/iot/about || exit 1
-
-    visualizer:
-        image: fiware/tutorials.context-provider
-        hostname: visualizer
-        depends_on:
-            - orion
-            - iot-agent
-        networks: 
-            default:
-                aliases:
-                    - iot-sensors
-                    - context-provider
-        ports:
-            - "3000:3000"
-            - "3001:3001"
-        environment:
-            - "DEBUG=visualizer:*"
-            - "WEB_APP_PORT=3000"
-            - "IOTA_HTTP_HOST=iot-agent"
-            - "IOTA_HTTP_PORT=7986"
-            - "DUMMY_DEVICES_PORT=3001"
-            - "DUMMY_DEVICES_API_KEY=4jggokgpepnvsb2uv4s40d59ov"
-            - "DUMMY_DEVICES_TRANSPORT=MQTT"
-            - "CONTEXT_BROKER=http://orion:1026/v2" 
-            - "MQTT_BROKER_URL=mqtt://mosquitto"
-        healthcheck:
-            test: curl --fail -s http://visualizer:3000/version || exit 1
-
-    mongo-db:
-        image: mongo:3.6
-        hostname: mongo-db
-        ports:
-            - "27017:27017"
-        networks:
-            - default
-        command: --bind_ip_all --smallfiles
-        volumes:
-            - mongo-db:/data
-
     mosquitto:
         image: eclipse-mosquitto
         hostname: mosquitto
         ports:
             - "1883:1883"
             - "9001:9001"
-        networks:
-            - default
         volumes:
             - mqtt-conf:/mosquitto/mosquitto.conf
         deploy:
             restart_policy:
                 condition: on-failure
+
+    subscriber:
+        image: eclipse-mosquitto
+        depends_on: 
+            - mosquitto
+        command: ["mosquitto_sub", "-h", "mosquitto", "-t", "test"]
+            
+    temperature:
+        image: eclipse-mosquitto
+        depends_on: 
+            - mosquitto
+            - subscriber
+        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "33.5°F"]
+        deploy:
+            restart_policy:
+                delay: 30s
+                window: 15s
     
-networks:
-    default:
-        ipam:
-            config:
-                - subnet: 192.168.255.0/24
+    wind:
+        image: eclipse-mosquitto
+        depends_on: 
+            - mosquitto
+            - subscriber
+        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "SSW @ 3 MPH"]
+        deploy:
+            restart_policy:
+                delay: 10s
+                window: 15s
+
+    last_updated:
+        image: eclipse-mosquitto
+        depends_on: 
+            - mosquitto
+            - subscriber
+        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "13:35EST 02/15"]
+        deploy:
+            restart_policy:
+                delay: 60s
+                window: 15s
 
 volumes:
     mqtt-conf:
-    mongo-db:

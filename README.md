@@ -3,9 +3,7 @@ Repository for the second project of the DNCS course 2019/2020, themed as managi
 
 # Preamble
 For this project, we will simulate a network of IoT devices controlled by an MQTT broker that act as a docker swarm, and we will use swarmpit to monitor the swarm resource utilization.
-In order to do so, we will start with FIWARE architecture as a base. They in fact provide some dummy IoT sensor useful for testing this architecture.
-
-Ref: https://github.com/FIWARE/tutorials.IoT-over-MQTT
+In order to do so, we will create dummy IoT sensor, which basically are only the subscriber part of the docker image eclipse-mosquitto, that will send data to the actual mqtt broker once every determined period. Another image, which is the subscriber of eclipse-mosquitto, listens for messages on that topic and will be used to collect them and log them.
 
 Tools needed:
 - Docker 19.03.5+
@@ -63,30 +61,16 @@ git clone https://github.com/mstreet97/dncs-swarm-management.git
 ```
 Now we can finally deploy our stack with:
 ```bash
-docker stack deploy -c docker-compose.yaml fiware-swarm
+docker stack deploy -c docker-compose.yaml mqtt-swarm
 ```
 After having done this, we can check if everything is up and running by giving the command:
 ```bash
-docker stack ps fiware-stack
+docker stack ps mqtt-swarm
 ```
 Which will answer showing all the containers up and running and explicitly declaring on which node they are.
 
-Next we need to run the provisioning script, that provisions all the sensor in the four stores with:
+Now, if we give the command:
 ```bash
-bash provisioner.sh
+watch docker service log mqtt-swarm_subscriber
 ```
-Once this has been done, we can head to:
-```bash
-192.168.99.100:3000/device/monitor
-```
-To be able to interact with the dummy IoT devices and see the MQTT message exchange.
-NOTE: Every ip of the three node stack will do it, so we can even use:
-```bash
-192.168.99.101:3000/device/monitor
-192.168.99.102:3000/device/monitor
-```
-and obtain the same result.
-
-Still missing to do:
-- fixing the actual swarm deploy, since it's only been tested successfully locally. There is a problem with the provisioning file, which the cURL returns an internal server error and honestly I have no idea why
-- swarm monitoring with swarmpit
+It will automatically run that command every 2 seconds, so that we can see the logs exanding as more mqtt messages are received.
