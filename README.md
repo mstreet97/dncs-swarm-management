@@ -74,3 +74,6 @@ Now, if we give the command:
 watch docker service log mqtt-swarm_subscriber
 ```
 It will automatically run that command every 2 seconds, so that we can see the logs exanding as more mqtt messages are received.
+
+After docker is done downloading all the needed images and starting the services, we can log into swarmpit at the page corresponding to the manager node IP, at port 888.
+After choosing a username and password we have access to swarmpit dashboard which shows the usage statistics for our stack.

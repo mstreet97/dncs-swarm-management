@@ -16,14 +16,26 @@ services:
         image: eclipse-mosquitto
         depends_on: 
             - mosquitto
-        command: ["mosquitto_sub", "-h", "mosquitto", "-t", "test"]
+        command: "mosquitto_sub -h mosquitto -t test"
+
+    subscriberGui:
+        image: node
+        depends_on:
+            - mosquitto
+        command: >
+            bash -c "git clone https://github.com/hivemq/hivemq-mqtt-web-client.git
+            && cd hivemq-mqtt-web-client
+            && node js/app.js"
+        deploy:
+            restart_policy:
+                condition: on-failure
             
     temperature:
         image: eclipse-mosquitto
         depends_on: 
             - mosquitto
             - subscriber
-        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "33.5°F"]
+        command: "mosquitto_pub -h mosquitto -t test -m '33.5°F'"
         deploy:
             restart_policy:
                 delay: 30s
@@ -34,7 +46,7 @@ services:
         depends_on: 
             - mosquitto
             - subscriber
-        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "SSW @ 3 MPH"]
+        command: "mosquitto_pub -h mosquitto -t test -m 'SSW @ 3 MPH'"
         deploy:
             restart_policy:
                 delay: 10s
@@ -45,11 +57,94 @@ services:
         depends_on: 
             - mosquitto
             - subscriber
-        command: ["mosquitto_pub", "-h", "mosquitto", "-t", "test", "-m", "13:35EST 02/15"]
+        command: "mosquitto_pub -h mosquitto -t test -m '13:35EST 02/15'"
         deploy:
             restart_policy:
                 delay: 60s
                 window: 15s
 
+    swarmpit:
+        image: swarmpit/swarmpit:latest
+        environment:
+            - SWARMPIT_DB=http://db:5984
+            - SWARMPIT_INFLUXDB=http://influxdb:8086
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+        ports:
+              - 888:8080
+        # networks:
+        #       - net
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.50'
+                    memory: 1024M
+                reservations:
+                    cpus: '0.25'
+                    memory: 512M
+            placement:
+                constraints:
+                  - node.role == manager
+        
+    db:
+        image: couchdb:2.3.0
+        volumes:
+            - db-data:/opt/couchdb/data
+        # networks:
+        #     - net
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.30'
+                    memory: 256M
+                reservations:
+                    cpus: '0.15'
+                    memory: 128M
+        
+    influxdb:
+        image: influxdb:1.7
+        volumes:
+            - influx-data:/var/lib/influxdb
+            # networks:
+            #     - net
+        deploy:
+            resources:
+                limits:
+                    cpus: '0.60'
+                    memory: 512M
+                reservations:
+                    cpus: '0.30'
+                    memory: 128M
+        
+    agent:
+        image: swarmpit/agent:latest
+        environment:
+            - DOCKER_API_VERSION=1.35
+        volumes:
+            - /var/run/docker.sock:/var/run/docker.sock:ro
+            # networks:
+            #     - net
+        deploy:
+            mode: global
+            labels:
+                swarmpit.agent: 'true'
+            resources:
+                limits:
+                    cpus: '0.10'
+                    memory: 64M
+                reservations:
+                    cpus: '0.05'
+                    memory: 32M
+        
+        # networks:
+        #   net:
+        #     driver: overlay
+        #     attachable: true          
+        
+
 volumes:
     mqtt-conf:
+    db-data:
+        driver: local
+    influx-data:
+        driver: local
