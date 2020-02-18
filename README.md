@@ -1,5 +1,7 @@
-# dncs-swarm-management
-Repository for the second project of the DNCS course 2019/2020, themed as managing docker swarms.
+# Docker Swarm Management and Statistics Project
+Repository for the second project of the Design of Networks and Communication Systems course @UniTn, Academic Year 2019/2020, themed as managing docker swarms.
+Authors: Matteo Strada, Giovanni Costa.
+The considered scenario is that of two groups of IoT sensors, one that updates frequently (sensor in a brewery cask) and one that updates much more slowly (the weather station). The performance and statistics of the swarm and the various nodes and services will be monitored via swarmpit.io
 
 # Preamble
 For this project, we will simulate a network of IoT devices controlled by an MQTT broker that act as a docker swarm, and we will use swarmpit to monitor the swarm resource utilization.
@@ -61,8 +63,11 @@ git clone https://github.com/mstreet97/dncs-swarm-management.git
 ```
 Now we can finally deploy our stack with:
 ```bash
+cd dncs-swarm-management
 docker stack deploy -c docker-compose.yaml mqtt-swarm
 ```
+Alternatively you can also get only the docker-compose.yaml file using wget and directly running that.
+
 After having done this, we can check if everything is up and running by giving the command:
 ```bash
 docker stack ps mqtt-swarm
@@ -75,5 +80,63 @@ watch docker service log mqtt-swarm_subscriber
 ```
 It will automatically run that command every 2 seconds, so that we can see the logs exanding as more mqtt messages are received.
 
-After docker is done downloading all the needed images and starting the services, we can log into swarmpit at the page corresponding to the manager node IP, at port 888.
-After choosing a username and password we have access to swarmpit dashboard which shows the usage statistics for our stack.
+After docker is done downloading all the needed images and starting the services, we can log into swarmpit gui via a web page with either node ip at port 888:
+```bash
+192.168.99.100:888
+```
+After choosing an admin username and password we have access to swarmpit dashboard which shows the usage statistics for our stack and let us perform different tasks, including moving containers around, restarting or redeploying them and viewing their logs.
+
+To see the MQTT publisher and subscribers interacting we can go to: services > subscriber > view log. Here the full message exchange will be shown.
+This project assumed a "slow updating iot service", our dummy weather station which will show something like this clocking every 5 minutes:
+```bash 
+| Location: Trento,IT
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Coordinates: Lat: 46.066423, Lng: 11.12576
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Sunrise time: 6:13
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Sunset time: 16:45
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Weather report: Trento
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | 
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |     \  /       Partly cloudy
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |   _ /"".-.     -1 °C          
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |     \_(   ).   ↓ 0 km/h       
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |     /(___(__)  10 km          
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |                0.0 mm         
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |                                                        ┌─────────────┐                                                       
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ┌──────────────────────────────┬───────────────────────┤  Tue 18 Feb ├───────────────────────┬──────────────────────────────┐
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │      .-.      Light drizzle  │    \  /       Partly cloudy  │  _`/"".-.     Patchy rain po…│  _`/"".-.     Patchy rain po…│
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │     (   ).    5..6 °C        │  _ /"".-.     8..9 °C        │   ,\_(   ).   6 °C           │   ,\_(   ).   2 °C           │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    (___(__)   ↓ 6-8 km/h     │    \_(   ).   ↓ 5-6 km/h     │    /(___(__)  ↖ 2-3 km/h     │    /(___(__)  ↗ 1-2 km/h     │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │     ‘ ‘ ‘ ‘   7 km           │    /(___(__)  10 km          │      ‘ ‘ ‘ ‘  10 km          │      ‘ ‘ ‘ ‘  10 km          │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    ‘ ‘ ‘ ‘    0.1 mm | 28%   │               0.0 mm | 0%    │     ‘ ‘ ‘ ‘   0.1 mm | 83%   │     ‘ ‘ ‘ ‘   0.1 mm | 27%   │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | └──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |                                                        ┌─────────────┐                                                       
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ┌──────────────────────────────┬───────────────────────┤  Wed 19 Feb ├───────────────────────┬──────────────────────────────┐
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │      .-.      Patchy light r…│      .-.      Patchy light r…│  _`/"".-.     Moderate rain …│  _`/"".-.     Patchy rain po…│
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │     (   ).    0 °C           │     (   ).    2 °C           │   ,\_(   ).   -2..0 °C       │   ,\_(   ).   -6..-3 °C      │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    (___(__)   ↖ 3-5 km/h     │    (___(__)   ↖ 3-4 km/h     │    /(___(__)  ← 5-10 km/h    │    /(___(__)  ↓ 7-15 km/h    │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │     ‘ ‘ ‘ ‘   9 km           │     ‘ ‘ ‘ ‘   9 km           │    ‚‘‚‘‚‘‚‘   9 km           │      ‘ ‘ ‘ ‘  10 km          │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    ‘ ‘ ‘ ‘    1.0 mm | 29%   │    ‘ ‘ ‘ ‘    1.1 mm | 49%   │    ‚’‚’‚’‚’   0.8 mm | 24%   │     ‘ ‘ ‘ ‘   0.3 mm | 0%    │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | └──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |                                                        ┌─────────────┐                                                       
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ┌──────────────────────────────┬───────────────────────┤  Thu 20 Feb ├───────────────────────┬──────────────────────────────┐
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │            Morning           │             Noon      └──────┬──────┘     Evening           │             Night            │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | ├──────────────────────────────┼──────────────────────────────┼──────────────────────────────┼──────────────────────────────┤
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    \  /       Partly cloudy  │    \  /       Partly cloudy  │    \  /       Partly cloudy  │    \  /       Partly cloudy  │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │  _ /"".-.     1 °C           │  _ /"".-.     2 °C           │  _ /"".-.     -1 °C          │  _ /"".-.     -3 °C          │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    \_(   ).   ↖ 1-2 km/h     │    \_(   ).   ↗ 3-5 km/h     │    \_(   ).   ↑ 3-6 km/h     │    \_(   ).   ↑ 1-2 km/h     │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │    /(___(__)  10 km          │    /(___(__)  10 km          │    /(___(__)  10 km          │    /(___(__)  10 km          │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | │               0.0 mm | 0%    │               0.0 mm | 0%    │               0.0 mm | 0%    │               0.0 mm | 0%    │
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | └──────────────────────────────┴──────────────────────────────┴──────────────────────────────┴──────────────────────────────┘
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Location: Trento, Territorio Val Adige, TN, TAA, Italia [46.0664228,11.1257601]
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | 
+mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Follow @igor_chubin for wttr.in updates
+```
+
+And also a "quickly updating iot service" in the form of a brewery sensor ecosystem, with temperature, volume and pressure inside a beer cask
+TO BE IMPLEMENTED
+```bash
+
+```

@@ -16,21 +16,56 @@ services:
         image: eclipse-mosquitto
         depends_on: 
             - mosquitto
+            - swarmpit-app
+            - agent
         command: "mosquitto_sub -h mosquitto -t test"
+        deploy:
+            restart_policy: 
+                condition: on-failure
 
-    subscriberGui:
-        image: node
+    sunriseSunset: #for this, need to public my repo, push the .js and use that
+        image: ubuntu
         depends_on:
             - mosquitto
+            - subscriber
         command: >
-            bash -c "git clone https://github.com/hivemq/hivemq-mqtt-web-client.git
-            && cd hivemq-mqtt-web-client
-            && node js/app.js"
+            bash -c " apt-get update
+            && apt-get install -y wget software-properties-common
+            && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+            && apt-get update
+            && apt-get install -y mosquitto nodejs mosquitto-clients
+            && cd ~
+            && wget https://raw.githubusercontent.com/mstreet97/dncs-swarm-management/master/sunriseSunse.js
+            && while true; do node sunriseSunse.js Trento IT > sunriseFile; mosquitto_pub -h mosquitto -t test -f sunriseFile; sleep 300; done"
         deploy:
             restart_policy:
                 condition: on-failure
+                delay: 15s
+                window: 15s
             
-    temperature:
+    forecast:
+        image: ubuntu
+        depends_on: 
+            - mosquitto
+            - subscriber
+        command: >
+            bash -c " apt-get update
+            && apt-get install -y wget software-properties-common
+            && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+            && apt-get update
+            && apt-get install -y mosquitto mosquitto-clients curl
+            && while true; do curl wttr.in/Trento > weatherFile; mosquitto_pub -h mosquitto -t test -f weatherFile; sleep 300; done"
+        deploy:
+            restart_policy:
+                condition: on-failure
+                delay: 10s
+                window: 15s
+    
+    # Need to re-adapt these as if they were sensor "inside" a production environment, just to have two fake IoT applications, one that
+    # updates once every long time (weather) (DONE) one that updates every second or so, for this second type we can't use the pure eclipse-mosquitto image, since
+    # not having bash I'd have to publish the message by killing and restarting the container cyclically. This needs so to be switched to an ubuntu image that will need to have mosquitto
+    # installed so that this way I can use a bash cycle as in the weather station, plus use a random number generator to "fake" the readings of the iot sensors
+    temperature: 
         image: eclipse-mosquitto
         depends_on: 
             - mosquitto
@@ -39,7 +74,7 @@ services:
         deploy:
             restart_policy:
                 delay: 30s
-                window: 15s
+                window: 5s
     
     wind:
         image: eclipse-mosquitto
@@ -49,8 +84,8 @@ services:
         command: "mosquitto_pub -h mosquitto -t test -m 'SSW @ 3 MPH'"
         deploy:
             restart_policy:
-                delay: 10s
-                window: 15s
+                delay: 35s
+                window: 5s
 
     last_updated:
         image: eclipse-mosquitto
@@ -60,10 +95,10 @@ services:
         command: "mosquitto_pub -h mosquitto -t test -m '13:35EST 02/15'"
         deploy:
             restart_policy:
-                delay: 60s
-                window: 15s
+                delay: 40s
+                window: 5s
 
-    swarmpit:
+    swarmpit-app:
         image: swarmpit/swarmpit:latest
         environment:
             - SWARMPIT_DB=http://db:5984
@@ -72,8 +107,6 @@ services:
             - /var/run/docker.sock:/var/run/docker.sock:ro
         ports:
               - 888:8080
-        # networks:
-        #       - net
         deploy:
             resources:
                 limits:
@@ -90,8 +123,6 @@ services:
         image: couchdb:2.3.0
         volumes:
             - db-data:/opt/couchdb/data
-        # networks:
-        #     - net
         deploy:
             resources:
                 limits:
@@ -105,8 +136,6 @@ services:
         image: influxdb:1.7
         volumes:
             - influx-data:/var/lib/influxdb
-            # networks:
-            #     - net
         deploy:
             resources:
                 limits:
@@ -120,10 +149,10 @@ services:
         image: swarmpit/agent:latest
         environment:
             - DOCKER_API_VERSION=1.35
+            - EVENT_ENDPOINT=http://swarmpit-app:8080/events
+            - HEALTH_CHECK_ENDPOINT=http://swarmpit-app:8080/version
         volumes:
             - /var/run/docker.sock:/var/run/docker.sock:ro
-            # networks:
-            #     - net
         deploy:
             mode: global
             labels:
@@ -134,13 +163,7 @@ services:
                     memory: 64M
                 reservations:
                     cpus: '0.05'
-                    memory: 32M
-        
-        # networks:
-        #   net:
-        #     driver: overlay
-        #     attachable: true          
-        
+                    memory: 32M        
 
 volumes:
     mqtt-conf:
