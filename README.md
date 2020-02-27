@@ -5,11 +5,14 @@ The considered scenario is that of two groups of IoT sensors, one that updates f
 
 # Preamble
 For this project, we will simulate a network of IoT devices controlled by an MQTT broker that act as a docker swarm, and we will use swarmpit to monitor the swarm resource utilization.
-In order to do so, we will create dummy IoT sensor, which basically are only the subscriber part of the docker image eclipse-mosquitto, that will send data to the actual mqtt broker once every determined period. Another image, which is the subscriber of eclipse-mosquitto, listens for messages on that topic and will be used to collect them and log them.
+In order to do so, we will create different dummy IoT sensors, which basically are only the publisher part of the eclipse-mosquitto mqtt clients, that, as a standalone docker image or combined with other (e.g installed on a ubuntu image) will send data to the actual mqtt broker once every determined period. Another image, which is the subscriber of eclipse-mosquitto, listens for messages on that topic and will be used to collect them and logs them.
 
 Tools needed:
 - Docker 19.03.5+
 - Docker Machine 0.13.0+
+
+Because of the above requirements, please make sure that Docker (https://docs.docker.com/get-docker/) is installed and up to date for your machine. (Mandatory)
+Please make sure that also docker-machine is installed and up to date (https://docs.docker.com/machine/). (This step is optional, but highly recommended since it's the easier way to follow this guide, but anyway you can use whatever virtualization tool that might suit your needs, like Digital Ocean, but you might need to adapt this tutorial content on your own if you want to go that way.)
 
 # First step
 The first step is that of creating a number of virtual machine so as to divide the components of our swarm, since it's a requirement for this project. We choose to create 3 nodes for our swarm, but that can be limited to 2 or exanded with many more depending on the characteristics of your machine.
@@ -66,7 +69,7 @@ Now we can finally deploy our stack with:
 cd dncs-swarm-management
 docker stack deploy -c docker-compose.yaml mqtt-swarm
 ```
-Alternatively you can also get only the docker-compose.yaml file using wget and directly running that.
+Alternatively you can also get only the docker-compose.yaml file using wget and directly running that, since all the needed scripts (e.g. sunriseSunset.js are automatically retrieved by the remote repo once the docker service is created).
 
 After having done this, we can check if everything is up and running by giving the command:
 ```bash

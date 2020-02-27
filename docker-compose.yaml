@@ -12,22 +12,33 @@ services:
             restart_policy:
                 condition: on-failure
 
-    subscriber:
+    weatherSubscriber:
         image: eclipse-mosquitto
         depends_on: 
             - mosquitto
             - swarmpit-app
             - agent
-        command: "mosquitto_sub -h mosquitto -t test"
+        command: "mosquitto_sub -h mosquitto -t weatherStation"
         deploy:
             restart_policy: 
                 condition: on-failure
 
-    sunriseSunset: #for this, need to public my repo, push the .js and use that
+    brewerySubscriber:
+        image: eclipse-mosquitto
+        depends_on: 
+            - mosquitto
+            - swarmpit-app
+            - agent
+        command: "mosquitto_sub -h mosquitto -t brewery"
+        deploy:
+            restart_policy: 
+                condition: on-failure
+
+    sunriseSunset: 
         image: ubuntu
         depends_on:
             - mosquitto
-            - subscriber
+            - weatherSubscriber
         command: >
             bash -c " apt-get update
             && apt-get install -y wget software-properties-common
@@ -35,8 +46,8 @@ services:
             && apt-get update
             && apt-get install -y mosquitto nodejs mosquitto-clients
             && cd ~
-            && wget https://raw.githubusercontent.com/mstreet97/dncs-swarm-management/master/sunriseSunse.js
-            && while true; do node sunriseSunse.js Trento IT > sunriseFile; mosquitto_pub -h mosquitto -t test -f sunriseFile; sleep 300; done"
+            && wget https://raw.githubusercontent.com/mstreet97/dncs-swarm-management/master/sunriseSunset.js
+            && while true; do node sunriseSunse.js Trento IT > sunriseFile; mosquitto_pub -h mosquitto -t weatherStation -f sunriseFile; sleep 300; done"
         deploy:
             restart_policy:
                 condition: on-failure
@@ -47,57 +58,126 @@ services:
         image: ubuntu
         depends_on: 
             - mosquitto
-            - subscriber
+            - weatherSubscriber
         command: >
             bash -c " apt-get update
             && apt-get install -y wget software-properties-common
             && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
             && apt-get update
             && apt-get install -y mosquitto mosquitto-clients curl
-            && while true; do curl wttr.in/Trento > weatherFile; mosquitto_pub -h mosquitto -t test -f weatherFile; sleep 300; done"
+            && while true; do curl wttr.in/Trento > weatherFile; mosquitto_pub -h mosquitto -t weatherStation -f weatherFile; sleep 300; done"
         deploy:
             restart_policy:
                 condition: on-failure
                 delay: 10s
                 window: 15s
     
-    # Need to re-adapt these as if they were sensor "inside" a production environment, just to have two fake IoT applications, one that
-    # updates once every long time (weather) (DONE) one that updates every second or so, for this second type we can't use the pure eclipse-mosquitto image, since
-    # not having bash I'd have to publish the message by killing and restarting the container cyclically. This needs so to be switched to an ubuntu image that will need to have mosquitto
-    # installed so that this way I can use a bash cycle as in the weather station, plus use a random number generator to "fake" the readings of the iot sensors
     temperature: 
-        image: eclipse-mosquitto
+        image: ubuntu
         depends_on: 
             - mosquitto
-            - subscriber
-        command: "mosquitto_pub -h mosquitto -t test -m '33.5°F'"
+            - brewerySubscriber
+        command: >
+            bash -c " apt-get update
+            && apt-get install -y wget software-properties-common
+            && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+            && apt-get update
+            && apt-get install -y mosquitto mosquitto-clients python
+            && while true; do python -c \"import random; print 'Cask Temperature: ' + str(random.randint(58,65)) + '°F' \" > tempFile; mosquitto_pub -h mosquitto -t brewery -f tempFile; rm tempFile; sleep 10; done"
         deploy:
             restart_policy:
-                delay: 30s
-                window: 5s
+                condition: on-failure
+                delay: 10s
+
+    volume: 
+        image: ubuntu
+        depends_on: 
+            - mosquitto
+            - brewerySubscriber
+        command: >
+            bash -c " apt-get update
+            && apt-get install -y wget software-properties-common
+            && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+            && apt-get update
+            && apt-get install -y mosquitto mosquitto-clients python
+            && while true; do python -c \"import random; print 'Cask Volume: ' + str(random.uniform(5,5.1)) + 'gal'\" > volumeFile; mosquitto_pub -h mosquitto -t brewery -f volumeFile; sleep 10; done"
+        deploy:
+            restart_policy:
+                condition: on-failure
+                delay: 10s
     
-    wind:
-        image: eclipse-mosquitto
+    pressure: 
+        image: ubuntu
         depends_on: 
             - mosquitto
-            - subscriber
-        command: "mosquitto_pub -h mosquitto -t test -m 'SSW @ 3 MPH'"
+            - brewerySubscriber
+        command: >
+            bash -c " apt-get update
+            && apt-get install -y wget software-properties-common
+            && apt-add-repository ppa:mosquitto-dev/mosquitto-ppa
+            && apt-get update
+            && apt-get install -y mosquitto mosquitto-clients python
+            && while true; do python -c \"import random; print 'Cask Pressure: ' + str(random.uniform(14.7,15)) + 'PSI'\" > pressureFile; mosquitto_pub -h mosquitto -t brewery -f pressureFile; sleep 10; done"
         deploy:
             restart_policy:
-                delay: 35s
-                window: 5s
+                condition: on-failure
+                delay: 10s
 
-    last_updated:
-        image: eclipse-mosquitto
-        depends_on: 
-            - mosquitto
-            - subscriber
-        command: "mosquitto_pub -h mosquitto -t test -m '13:35EST 02/15'"
-        deploy:
-            restart_policy:
-                delay: 40s
-                window: 5s
 
+# Log visualization and related services
+# Note, it is extremely resource hungry and will need another node
+
+    # elasticsearch:
+    #     image: docker.elastic.co/elasticsearch/elasticsearch:5.3.2
+    #     environment:
+    #         ES_JAVA_OPTS: '-Xms256m -Xmx256m'
+    #         xpack.security.enabled: 'false'
+    #         xpack.monitoring.enabled: 'false'
+    #         xpack.graph.enabled: 'false'
+    #         xpack.watcher.enabled: 'false'
+    #     volumes:
+    #         - esdata:/usr/share/elasticsearch/data
+    #     deploy:
+    #         replicas: 1
+
+    # logstash:
+    #     image: docker.elastic.co/logstash/logstash:5.3.2
+    #     volumes:
+    #         - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    #     depends_on:
+    #         - elasticsearch
+    #     deploy:
+    #         replicas: 1
+
+    # logspout:
+    #     image: bekt/logspout-logstash
+    #     environment:
+    #         ROUTE_URIS: 'logstash://logstash:5000'
+    #     volumes:
+    #         - /var/run/docker.sock:/var/run/docker.sock
+    #     depends_on:
+    #         - logstash
+    #     deploy:
+    #         mode: global
+    #         restart_policy:
+    #             condition: on-failure
+    #             delay: 30s
+
+    # kibana:
+    #     image: docker.elastic.co/kibana/kibana:5.3.2
+    #     ports:
+    #         - 5601:5601
+    #     depends_on:
+    #         - elasticsearch
+    #     environment:
+    #         ELASTICSEARCH_URL: 'http://elasticsearch:9200'
+    #         XPACK_SECURITY_ENABLED: 'false'
+    #         XPACK_MONITORING_ENABLED: 'false'
+    #     deploy:
+    #         replicas: 1
+    
+
+# Swarmpit and related services
     swarmpit-app:
         image: swarmpit/swarmpit:latest
         environment:
@@ -171,3 +251,5 @@ volumes:
         driver: local
     influx-data:
         driver: local
+    # esdata:
+    #     driver: local
