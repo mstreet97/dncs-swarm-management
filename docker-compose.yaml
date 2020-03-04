@@ -47,7 +47,7 @@ services:
             && apt-get install -y mosquitto nodejs mosquitto-clients
             && cd ~
             && wget https://raw.githubusercontent.com/mstreet97/dncs-swarm-management/master/sunriseSunset.js
-            && while true; do node sunriseSunse.js Trento IT > sunriseFile; mosquitto_pub -h mosquitto -t weatherStation -f sunriseFile; sleep 300; done"
+            && while true; do node sunriseSunset.js Trento IT > sunriseFile; mosquitto_pub -h mosquitto -t weatherStation -f sunriseFile; sleep 300; done"
         deploy:
             restart_policy:
                 condition: on-failure
