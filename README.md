@@ -89,7 +89,7 @@ After docker is done downloading all the needed images and starting the services
 ```
 After choosing an admin username and password we have access to swarmpit dashboard which shows the usage statistics for our stack and let us perform different tasks, including moving containers around, restarting or redeploying them and viewing their logs.
 
-To see the MQTT publisher and subscribers interacting we can go to: services > subscriber > view log. Here the full message exchange will be shown.
+To see the MQTT publisher and subscribers interacting we can go to: services > weatherSubscriber > view log. Here the full message exchange will be shown.
 This project assumed a "slow updating iot service", our dummy weather station which will show something like this clocking every 5 minutes:
 ```bash 
 | Location: Trento,IT
@@ -138,8 +138,16 @@ mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    |
 mqtt-swarm_subscriber.1.uxz7t7nuat0b@node2    | Follow @igor_chubin for wttr.in updates
 ```
 
-And also a "quickly updating iot service" in the form of a brewery sensor ecosystem, with temperature, volume and pressure inside a beer cask
-TO BE IMPLEMENTED
+And also a "quickly updating iot service" (every 5 seconds) in the form of a brewery sensor ecosystem, with temperature, volume and pressure inside a beer cask. In order to see these logs, you should go with the swarmpit GUI to: services > brewerySubscriber > view log.
 ```bash
-
+ Cask Volume: 5.05401359944gal
+ 
+ Cask Temperature: 62°F
+ 
+ Cask Pressure: 14.9033819006PSI
 ```
+
+From the SwarmPit Gui a lot of different actions can be carried out, from monitoring nodes and container statuses, resources consumption, etc. We can (as was a request of the project) redeploy a service on a different container. The whole system by now should be working fine, feel free to experiment with you own containers and configurations.
+
+# Final remarks
+An ELK stack, to dynamically handles logging from the various containers is available, but it's been commented out in the docker-compose.yaml file. This is because it's quite resource heavy, and might take a long time to get it up and running, plus, specifically on my machine, 4 nodes are requires to have it running and it's fairly unstable. If you have better hardware, feel free to have a got with it by uncommenting all the related lines.
