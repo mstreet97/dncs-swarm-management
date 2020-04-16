@@ -15,7 +15,7 @@ Because of the above requirements, please make sure that Docker (https://docs.do
 Please make sure that also docker-machine is installed and up to date (https://docs.docker.com/machine/). (This step is optional, but highly recommended since it's the easier way to follow this guide, but anyway you can use whatever virtualization tool that might suit your needs, like Digital Ocean, but you might need to adapt this tutorial content on your own if you want to go that way.)
 
 # First step
-The first step is that of creating a number of virtual machine so as to divide the components of our swarm, since it's a requirement for this project. We choose to create 3 nodes for our swarm, but that can be limited to 2 or exanded with many more depending on the characteristics of your machine.
+The first step is that of creating a number of virtual machines so as to divide the components of our swarm, since it's a requirement for this project. We choose to create 3 nodes for our swarm, but that can be limited to 2 or expanded with many more depending on the characteristics of your machine.
 
 The following commands inside the docker-machine-init.sh script will do this for you:
 ```bash
@@ -28,7 +28,6 @@ docker-machine create node3
 Once that was done, we can ssh into node1:
 ```bash
 docker-machine ssh node1
-docker-machine ssh node3
 ```
 Once done we need to set up the swarm, so we'll do it inside node1:
 ```bash
@@ -55,7 +54,7 @@ As a check for our node cluster we can run:
 docker node ls
 ```
 To see that all the three nodes have been created and are up and running.
-Now, if we want, we can see that we are able to ping the various nodes of the swarm from each other, so congrats, now we have a fully working 3-node swarm!
+Now, if we want, we can see that we are able to ping the various nodes of the swarm from each other, so congrats, we have a fully working 3-node swarm!
 
 # Third step, running the docker stack deploy script
 Now, we could do everything manually, but it will be cumbersome, so the ideal is to deploy everything using a .yaml script, in the same fashion as a docker-compose.yaml script, but for swarms.
@@ -81,7 +80,7 @@ Now, if we give the command:
 ```bash
 watch docker service log mqtt-swarm_subscriber
 ```
-It will automatically run that command every 2 seconds, so that we can see the logs exanding as more mqtt messages are received.
+It will automatically run that command every 2 seconds, so that we can see the logs expanding as more mqtt messages are received.
 
 After docker is done downloading all the needed images and starting the services, we can log into swarmpit gui via a web page with either node ip at port 888:
 ```bash
@@ -150,4 +149,4 @@ And also a "quickly updating iot service" (every 5 seconds) in the form of a bre
 From the SwarmPit Gui a lot of different actions can be carried out, from monitoring nodes and container statuses, resources consumption, etc. We can (as was a request of the project) redeploy a service on a different container. The whole system by now should be working fine, feel free to experiment with you own containers and configurations.
 
 # Final remarks
-An ELK stack, to dynamically handles logging from the various containers is available, but it's been commented out in the docker-compose.yaml file. This is because it's quite resource heavy, and might take a long time to get it up and running, plus, specifically on my machine, 4 nodes are requires to have it running and it's fairly unstable. If you have better hardware, feel free to have a got with it by uncommenting all the related lines.
+An ELK stack, to dynamically handle logging from the various containers is available, but it's been commented out in the docker-compose.yaml file. This is because it's quite resource heavy, and might take a long time to get it up and running, plus, specifically on my machine, 4 nodes are required to have it running and it's fairly unstable. If you have better hardware, feel free to have a go with it by uncommenting all the related lines.
