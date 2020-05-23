@@ -150,3 +150,9 @@ From the SwarmPit Gui a lot of different actions can be carried out, from monito
 
 # Final remarks
 An ELK stack, to dynamically handle logging from the various containers is available, but it's been commented out in the docker-compose.yaml file. This is because it's quite resource heavy, and might take a long time to get it up and running, plus, specifically on my machine, 4 nodes are required to have it running and it's fairly unstable. If you have better hardware, feel free to have a go with it by uncommenting all the related lines.
+Other that this, you will also need to set on each node an appropriate value for max_map_count.
+Typing this command for each of the nodes of the docker swarm will be sufficient:
+```bash
+sudo sysctl -w vm.max_map_count=262144
+```
+
